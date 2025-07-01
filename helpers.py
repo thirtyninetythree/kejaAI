@@ -1,5 +1,6 @@
 import json
 import re
+from typing import List
 
 def format_property_data(raw_property_data: str) -> dict:
     """
@@ -52,18 +53,15 @@ def format_property_data(raw_property_data: str) -> dict:
     
     return property_obj
 
-# # Example usage with your data
-# raw_data = """Successfully extracted all information. 
-# Images: [https://www.property24.com/Images/Property/116096488/116096488_1_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_2_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_3_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_4_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_5_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_6_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_7_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_8_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_9_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_10_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_11_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_12_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_13_400x400.jpg, https://www.property24.com/Images/Property/116096488/116096488_14_400x400.jpg]
-# Link: https://www.property24.co.ke/3-bedroom-apartment-flat-to-rent-in-westlands-116096488
-# Description: Three bedroom not ensuite apartment for rent in Westlands. Though an older development, the apartment is well maintained and sits on a large compound with a garden, ideal as a children's play area. The location is also close to several churches and a mosque, making it convenient for spiritual needs.
-# Exact Location: Sarit Centre Karuna Rd, Westlands, Nairobi
-# Building Amenities: gym, swimming pool, parking, 24hr security"""
-
-# query = "2 bedroom apartment in Westlands under 50000 KES. Lots of natural light"
-
-# # Format the data
-# formatted_data = format_property_data(query, raw_data)
-
-# # Print as JSON
-# print(json.dumps(formatted_data, indent=2))
+def save_results(houses: List[str], query: str, filename: str = "search_results.json"):
+    """Save results to JSON file"""
+    results = {
+        "query": query,
+        "total_properties": len(houses),
+        "properties": [str(house) for house in houses]
+    }
+    
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+    
+    print(f"💾 Results saved to {filename}")
