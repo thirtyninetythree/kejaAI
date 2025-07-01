@@ -50,7 +50,8 @@ async def get_all_house_details(link: str) -> dict:
         STEP 1 - IMAGE EXTRACTION:
         - Look for image galleries, carousels, or photo sections
         - Extract ALL images from these sections and ONLY these sections
-        - The images must be large and show the listing property
+        - The images must be large and show the listing property and ONLY images of the property
+        - Right click on the image and select copy link
         - Ensure URLs are complete (start with http/https)
         - ONLY include property photos, exclude logos/ads/avatars
         
@@ -77,10 +78,4 @@ async def get_all_house_details(link: str) -> dict:
 
     print(f"🔍 Getting images from: {link}")
     history = await agent.run()
-
-    # counter.add_request(prompt, result)
-    # print("################################# history.final_result()")
-    # print(history.final_result())
-    # print("################################# history.extracted_content()")
-    # print(history.extracted_content())
     return history.final_result()
