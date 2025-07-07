@@ -1,4 +1,5 @@
 
+from browser_use import Agent
 import requests
 from PIL import Image
 import base64
@@ -10,48 +11,40 @@ from langchain_google_genai import ChatGoogleGenerativeAI
 from settings import EVALUATOR_MODEL
 
 llm = ChatGoogleGenerativeAI(model=EVALUATOR_MODEL)
-    
-def evaluate_image(image_url: str, query: str) -> bool:
-    """Evaluate image based on user preference in query and filter out low quality listings"""
-    print(f"image_url = {image_url}")
-    try:
-        response = requests.get(image_url, timeout=10)
-        image = Image.open(io.BytesIO(response.content))
-        
-        
-        # Convert to base64
-        buffered = io.BytesIO()
-        image.save(buffered, format="JPEG")
-        img_str = base64.b64encode(buffered.getvalue()).decode()
-        
-        prompt = f"""Evaluate this property image. 
-                    Return only 'KEEP' or 'REJECT' and the reason why to keep it
-                    KEEP if: clear, well-lit, shows actual property and matches user query somewhat {query}
-                    REJECT if: blurry, dark, placeholder, or very low quality
 
-                    Image: data:image/jpeg;base64,{img_str}
-                    """
-        
-        result = llm.invoke(prompt).content.strip()
-        return "KEEP" in result.upper()
-        
-    except Exception as e:
-        print(f"ERROR EVALUATING IMAGE: {e}")
-        return True
-        
-def filter_quality_houses(houses: list, query: str) -> list:
-    filtered = []
 
-    for i, house in enumerate(houses):
-        if house.get("images") and house["images"]: 
-            for i in range(5):
-                result = evaluate_image(house["images"][i], query) 
-                filtered.append(house) if result else None
-                print(f"{i+1}/{len(houses)} processed. Result: {result}")
-            
-                # For Gemini rate limits, about 30 reqs/min
-                if i < len(houses) - 1:
-                    time.sleep(3)
-    return filtered
-    
-    
+async def evaluate_house_details(link: str, query: str) -> dict:
+    prompt = f"""
+        `Navigate to {link} and evaluate against query: "{query}"
+
+        EVALUATION PROCESS:
+        - Scroll through all property images (galleries, carousels, lazy-loaded)
+        - Analyze image quality: lighting, clarity, completeness of property showcase
+        - Extract description, exact street location, building amenities
+        - Score how well property matches user requirements
+
+        SCORING SYSTEM (1-10):
+        - Query match (bedrooms, location, price, features): 40%
+        - Image quality (lighting, clarity, room coverage): 30%
+        - Amenities relevance: 20%
+        - Location accuracy: 10%
+
+        Return JSON:
+        {{
+        "link": "{link}",
+        "description": "Full property description",
+        "exact_location": "Street/Road name with area",
+        "building_amenities": ["gym", "parking", "security"],
+        "evaluation_score": 8.5,
+        "evaluation_reason": "3BR matches query, excellent natural light in photos, prime Westlands location"
+        }}
+        """
+    agent = Agent(
+        task=prompt,
+        llm=llm,
+    )
+
+    print(f"🔍 Getting images from: {link}")
+    history = await agent.run()
+    return history.final_result()
+

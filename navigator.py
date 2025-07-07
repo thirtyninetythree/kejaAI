@@ -15,22 +15,28 @@ async def search_houses(query: str) -> List[str]:
     """Search for houses based on natural language query"""
 
     prompt = f"""
-        Your goal is to find rental properties based on the user's query: "{query}"
+        Find rental properties for: "{query}"
 
-        STEP 1 - SEARCH SETUP:
-        1. Go to https://www.property24.co.ke/apartments-flats-to-rent
-        2. Use the location search box to enter location from user query
-        3. Set property type to "Apartment/Flat" 
-        4. Set price filter to maximum price from user query
-        5. Set bedrooms filter based on user query e.g 2+
-        6. Click search/filter button
+        SEARCH EXECUTION:
+        1. Navigate to https://www.property24.co.ke/apartments-flats-to-rent
+        2. Parse query and fill filters:
+        - Location: Extract area/neighborhood from query
+        - Property type: "Apartment/Flat" 
+        - Price: Set max price filter from query (e.g. "under 50000" → max 50000)
+        - Bedrooms: Extract number + set filter (e.g. "2 bedroom" → 2+)
+        3. Submit search and wait for results
 
-        STEP 2 - EXTRACT PROPERTY DATA:
-        1. After search results load, extract ONLY:
-        - Link to property detail page (full URL)
-        2. Return as JSON array: [{{"link": "url"}}] 
+        EXTRACTION:
+        - From search results page, extract ALL property detail page URLs
+        - Get complete URLs (https://www.property24.co.ke/...)
+        - Skip ads, featured listings, or non-property links
 
-        CRITICAL: Your final response should be ONLY the JSON array, nothing else.
+        OUTPUT FORMAT:
+        Return ONLY this JSON array:
+        [
+        {{"link": "https://www.property24.co.ke/property-url-1"}},
+        {{"link": "https://www.property24.co.ke/property-url-2"}}
+        ]
         """
     
     # Create agent with proper browser config
@@ -41,41 +47,4 @@ async def search_houses(query: str) -> List[str]:
     
     print(f"🔍 Searching: {query}")
     result = await agent.run()
-    return result
-
-async def get_all_house_details(link: str) -> dict:
-    prompt = f"""
-        Navigate to this property listing: {link}
-    
-        STEP 1 - IMAGE EXTRACTION:
-        - Look for image galleries, carousels, or photo sections
-        - Extract ALL images from these sections and ONLY these sections
-        - The images must be large and show the listing property and ONLY images of the property
-        - Right click on the image and select copy link
-        - Ensure URLs are complete (start with http/https)
-        - ONLY include property photos, exclude logos/ads/avatars
-        
-        STEP 2 - DATA EXTRACTION:
-        - Description: Look for property description, details, or summary sections
-        - Location: Find street address, road name, area details (not just city)
-        - Amenities: Look for building features, facilities, or amenities lists
-
-
-        Return ONLY this JSON format:
-        {{
-            "images": ["https://image1.jpg", "https://image2.jpg"],
-            "link": "{link}",
-            "description": "Full property description text here",
-            "exact_location": "Road/Avenue/Street name where building is located",
-            "building_amenities": ["gym", "swimming pool", "parking", "24hr security", etc]
-        }}
-        """
- 
-    agent = Agent(
-        task=prompt,
-        llm=llm,
-    )
-
-    print(f"🔍 Getting images from: {link}")
-    history = await agent.run()
-    return history.final_result()
+    return result.final_result()
